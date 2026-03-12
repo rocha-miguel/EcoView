@@ -6,13 +6,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.util.Patterns
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,9 +40,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -69,14 +64,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 
 
 @Composable
-fun TelaRegistrarse(navController: NavController) {
+fun TelaAtualizar(navController: NavController) {
 
     val context = LocalContext.current
 
@@ -118,10 +112,10 @@ fun TelaRegistrarse(navController: NavController) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ComponenteTitulo()
+            ComponenteTituloAtualizar()
             Spacer(modifier = Modifier.height(16.dp))
-            ImagemUsuario(profileImage, launcher)
-            RegistrarFormulario(navController, profileImage)
+            ImagemUsuarioAtualizar(profileImage, launcher)
+            AtualizarFormulario(navController, profileImage)
         }
 
         BottomEndCard(modifier = Modifier.align(Alignment.BottomEnd))
@@ -134,15 +128,15 @@ fun TelaRegistrarse(navController: NavController) {
     showSystemUi = true
 )
 @Composable
-private fun SignupScreenPreview() {
+private fun TelaAtualizarPreview() {
     EcoViewTheme() {
-        TelaRegistrarse(rememberNavController())
+        TelaAtualizar(rememberNavController())
     }
 }
 
 
 @Composable
-fun ComponenteTitulo() {
+fun ComponenteTituloAtualizar() {
 
     Column(
         verticalArrangement = Arrangement.Center,
@@ -150,13 +144,13 @@ fun ComponenteTitulo() {
     ) {
 
         Text(
-            text = stringResource(R.string.cadastro),
+            text = stringResource(R.string.atualizar),
             color = MaterialTheme.colorScheme.onPrimary,
             style = MaterialTheme.typography.displayLarge
 
         )
         Text(
-            text = stringResource(R.string.crie_sua_conta),
+            text = stringResource(R.string.atualize_seus_dados),
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.displaySmall
         )
@@ -167,7 +161,7 @@ fun ComponenteTitulo() {
 }
 
 @Composable
-fun ImagemUsuario(profileImage: Bitmap, launcher: ManagedActivityResultLauncher<String, Uri?>) {
+fun ImagemUsuarioAtualizar(profileImage: Bitmap, launcher: ManagedActivityResultLauncher<String, Uri?>) {
 
     Box(
         modifier = Modifier
@@ -204,9 +198,9 @@ fun ImagemUsuario(profileImage: Bitmap, launcher: ManagedActivityResultLauncher<
     uiMode = Configuration.UI_MODE_NIGHT_NO
 )
 @Composable
-private fun ImagemUsuario() {
+private fun ImagemUsuarioAtualizar() {
     EcoViewTheme() {
-        //ImagemUsuario(profileImage, launcher)
+        //ImagemUsuarioAtualizar(profileImage, launcher)
 
     }
 }
@@ -227,7 +221,7 @@ private fun ComponenteTituloPreview() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
+fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
 
     var nome by remember {
         mutableStateOf("")
@@ -287,7 +281,6 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 Text(
                     text = stringResource(R.string.seu_nome),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary
                 )
             },
             shape = RoundedCornerShape(16.dp),
@@ -344,7 +337,6 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 Text(
                     text = stringResource(R.string.seu_email),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary
                 )
             },
             shape = RoundedCornerShape(16.dp),
@@ -352,6 +344,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 .colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+
 
                     ),
             leadingIcon = {
@@ -401,7 +394,6 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 Text(
                     text = "Sua senha",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary
                 )
             },
             shape = RoundedCornerShape(16.dp),
@@ -622,10 +614,6 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 .fillMaxWidth()
                 .height(48.dp),
             shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.onPrimary
-            ),
             elevation = ButtonDefaults
                 .buttonElevation(
                     defaultElevation = 6.dp,
@@ -634,7 +622,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
         )
         {
             Text(
-                text = stringResource(R.string.criar_conta),
+                text = stringResource(R.string.atualizar_conta),
                 color = MaterialTheme.colorScheme.surface,
                 style = MaterialTheme.typography.labelMedium
             )
@@ -695,9 +683,9 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
     uiMode = Configuration.UI_MODE_NIGHT_NO
 )
 @Composable
-private fun RegistrarFormularioPreview() {
+private fun AtualizarFormularioPreview() {
     EcoViewTheme() {
-        //RegistrarFormulario(rememberNavController(), profileImage)
+        //AtualizarFormulario(rememberNavController(), profileImage)
 
     }
 

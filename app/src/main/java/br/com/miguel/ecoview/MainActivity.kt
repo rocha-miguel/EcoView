@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import br.com.miguel.ecoview.screens.TelaRegistrarse
+import br.com.miguel.ecoview.screens.TelaRegistrar
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             EcoViewTheme {
-                TelaRegistrarse(rememberNavController())
+                TelaRegistrar(rememberNavController())
                 }
             }
         }

@@ -20,3 +20,20 @@ val TextBlack = Color(0xFF000000)
 val ButtonGradient = Color(0xFF54E35B)
 val LightTertiary = Color(0xFF003911)
 val LightOnTertiary = Color(0xFF737373)
+
+
+val DarkPrimary = Color(0xFF66BB6A)
+val DarkSecondary = Color(0xFF2E5D3A)
+val DarkBackground = Color(0xFF121A12)
+val DarkSurface = Color(0xFF1B251B)
+
+val DarkTextWhite = Color(0xFFF5F5F5)
+val DarkTextBlack = Color(0xFF000000)
+
+val DarkTitle = Color(0xFF7DFF8A)
+val DarkOnSecondary = Color(0xFFF1F8E9)
+
+val DarkTertiary = Color(0xFF9BE7A1)
+val DarkOnTertiary = Color(0xFFB0B0B0)
+
+val DarkButtonGradient = Color(0xFF3DDC84)

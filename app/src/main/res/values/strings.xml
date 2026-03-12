@@ -17,4 +17,8 @@
     <string name="nome_inv_lido">Nome inválido</string>
     <string name="erro">Erro</string>
     <string name="seu_nome">Seu nome</string>
+    <string name="por_favor_entre_para_continuar">Por favor, entre para continuar</string>
+    <string name="atualizar">Atualizar</string>
+    <string name="atualize_seus_dados">Atualize seus dados</string>
+    <string name="atualizar_conta">Atualizar Conta</string>
 </resources>
