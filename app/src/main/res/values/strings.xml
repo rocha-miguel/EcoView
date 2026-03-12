@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">EcoView</string>
+    <string name="ecoview">EcoView</string>
+    <string name="veja_seu_impacto_no_planeta">Veja seu impacto no planeta</string>
+    <string name="homem_segurando_uma_l_mpada_com_uma_folha_dentro">Homem segurando uma lâmpada com uma folha dentro</string>
+    <string name="entrar">Entrar</string>
+    <string name="registrar_se">Registrar-se</string>
+    <string name="cadastro">Cadastro</string>
+    <string name="crie_sua_conta">Crie sua conta</string>
+    <string name="c_mera_cone">Câmera Ícone</string>
+    <string name="imagem">Imagem</string>
+    <string name="cone_pessoa">Ícone Pessoa</string>
+    <string name="seu_email">Seu email</string>
+    <string name="cone_email">Ícone email</string>
+    <string name="cone_senha">Ícone senha</string>
+    <string name="criar_conta">Criar Conta</string>
+    <string name="nome_inv_lido">Nome inválido</string>
+    <string name="erro">Erro</string>
+    <string name="seu_nome">Seu nome</string>
+</resources>
