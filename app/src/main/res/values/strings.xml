@@ -27,4 +27,10 @@
     <string name="perfil">Perfil</string>
     <string name="in_cio">Início</string>
     <string name="hist_rico">Histórico</string>
+    <string name="calcular_emiss_o_de_co">Calcular Emissão de CO₂</string>
+    <string name="quilometragem">Quilometragem</string>
+    <string name="quantos_km_dirigiu_hoje">Quantos Km dirigiu hoje?</string>
+    <string name="comida">Comida</string>
+    <string name="folhas">Folhas</string>
+    <string name="emiss_o_de_co">Emissão de CO₂</string>
 </resources>

@@ -26,13 +26,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
+import br.com.miguel.ecoview.navigation.Destination
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 
 @Composable
-fun TelaInicial(
-
-) {
+fun TelaInicial(navController: NavHostController) {
 
     Box(
         modifier = Modifier
@@ -87,7 +88,9 @@ fun TelaInicial(
 
             ) {
                 Button(
-                    onClick = {},
+                    onClick = {
+                        navController.navigate(Destination.Entrar.route)
+                    },
                     colors = ButtonDefaults
                         .buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -119,7 +122,9 @@ fun TelaInicial(
                 }
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        navController.navigate(Destination.Registrar.route)
+                    },
                     colors = ButtonDefaults
                         .buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -162,7 +167,7 @@ fun TelaInicial(
 private fun TelaInicialPreview() {
 
     EcoViewTheme() {
-        TelaInicial()
+        TelaInicial(rememberNavController())
     }
 
 }

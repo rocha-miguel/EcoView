@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
+import br.com.miguel.ecoview.navigation.Destination
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 
 
@@ -592,7 +593,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
 
         Button(
             onClick = {
-
+                navController.navigate(Destination.Entrar.route)
 
                 /*if (validate()) {
                     userRepository.saveUser(

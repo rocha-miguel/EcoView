@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
+import br.com.miguel.ecoview.navigation.Destination
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 
 @Composable
@@ -67,7 +68,7 @@ fun TelaEntrar(navController: NavController) {
         ) {
             ComponenteTituloEntrar()
             Spacer(modifier = Modifier.height(16.dp))
-            EntrarFormulario()
+            EntrarFormulario(navController)
         }
 
         BottomEndCard(modifier = Modifier.align(Alignment.BottomEnd))
@@ -107,7 +108,7 @@ fun ComponenteTituloEntrar() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EntrarFormulario() {
+fun EntrarFormulario(navController: NavController) {
 
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
@@ -206,7 +207,9 @@ fun EntrarFormulario() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { },
+            onClick = {
+                navController.navigate(Destination.Principal.route)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -234,7 +237,9 @@ fun EntrarFormulario() {
                 style = MaterialTheme.typography.bodyMedium
             )
             TextButton(
-                onClick = { }
+                onClick = {
+                    navController.navigate(Destination.Registrar.route)
+                }
             ) {
                 Text(
                     text = "Registrar-se",
@@ -254,6 +259,6 @@ fun EntrarFormulario() {
 @Composable
 private fun EntrarFormularioPreview() {
     EcoViewTheme {
-        EntrarFormulario()
+        EntrarFormulario(rememberNavController())
     }
 }

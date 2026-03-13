@@ -39,8 +39,8 @@ val Typography = Typography(
     ),
     titleMedium = TextStyle(
         fontFamily = ubuntuFamilly,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 36.sp,
+        fontWeight = FontWeight.Bold,
+        fontSize = 30.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
