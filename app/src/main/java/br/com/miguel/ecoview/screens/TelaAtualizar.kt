@@ -10,12 +10,15 @@ import android.util.Patterns
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -590,11 +594,14 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
 
-
-                /*if (validate()) {
+        ) {
+            Button(
+                onClick = {
+                    /*if (validate()) {
                     userRepository.saveUser(
                         User(name = name,
                             email = email,
@@ -609,24 +616,68 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
                 } else {
                     showDialogError = true
                 }*/
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(16.dp),
-            elevation = ButtonDefaults
-                .buttonElevation(
-                    defaultElevation = 6.dp,
-                    pressedElevation = 2.dp
-                )
-        )
-        {
-            Text(
-                text = stringResource(R.string.atualizar_conta),
-                color = MaterialTheme.colorScheme.surface,
-                style = MaterialTheme.typography.labelMedium
-            )
+                },
+                colors = ButtonDefaults
+                    .buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = ButtonDefaults
+                    .buttonElevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 2.dp
+                    ),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                modifier = Modifier
+                    .padding(horizontal = 10.dp)
+                    .size(width = 150.dp, height = 48.dp)
+
+
+            ) {
+
+                Text(
+                    text = stringResource(R.string.atualizar),
+                    color = MaterialTheme.colorScheme.surface,
+                    style = MaterialTheme.typography.labelMedium,
+
+                    )
+            }
+
+            Button(
+                onClick = {},
+                colors = ButtonDefaults
+                    .buttonColors(
+                        containerColor = Color(0xFFD90C0C)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                elevation = ButtonDefaults
+                    .buttonElevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 2.dp
+                    ),
+                modifier = Modifier
+                    .padding(horizontal = 10.dp)
+                    .size(width = 150.dp, height = 48.dp)
+
+
+            ) {
+                Text(
+                    text = stringResource(R.string.excluir),
+                    color = MaterialTheme.colorScheme.surface,
+                    style = MaterialTheme.typography.labelMedium,
+
+                    )
+            }
         }
+
 
         if (showDialogSuccess) {
 

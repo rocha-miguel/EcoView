@@ -21,4 +21,10 @@
     <string name="atualizar">Atualizar</string>
     <string name="atualize_seus_dados">Atualize seus dados</string>
     <string name="atualizar_conta">Atualizar Conta</string>
+    <string name="excluir">Excluir</string>
+    <string name="realizar_novo_c_lculo">Realizar novo cálculo</string>
+    <string name="imagem_usu_rio">Imagem usuário</string>
+    <string name="perfil">Perfil</string>
+    <string name="in_cio">Início</string>
+    <string name="hist_rico">Histórico</string>
 </resources>

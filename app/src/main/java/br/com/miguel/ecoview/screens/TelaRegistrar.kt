@@ -124,7 +124,7 @@ fun TelaRegistrar(navController: NavController) {
 
 @Preview(
     showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
     showSystemUi = true
 )
 @Composable
