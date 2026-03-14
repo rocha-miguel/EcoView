@@ -34,6 +34,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,6 +43,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -60,14 +63,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
+import br.com.miguel.ecoview.model.Usuario
 import br.com.miguel.ecoview.navigation.Destination
+import br.com.miguel.ecoview.repository.RoomUsuarioRepository
+import br.com.miguel.ecoview.service.Localidades
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
+import br.com.miguel.ecoview.utils.convertBitmapToByteArray
 
 
 @Composable
@@ -222,7 +231,7 @@ private fun ComponenteTituloPreview() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
+fun RegistrarFormulario(navController: NavController, imagemUsuario: Bitmap) {
 
     var nome by remember {
         mutableStateOf("")
@@ -236,9 +245,20 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
         mutableStateOf("")
     }
 
+    var expandedEstado by remember { mutableStateOf(false) }
+    var expandedCidade by remember { mutableStateOf(false) }
+    var estadoSelecionado by remember { mutableStateOf("") }
+    var cidadeSelecionada by remember { mutableStateOf("") }
+    val estados = Localidades.estadosECidades.keys.toList()
+    val cidades = Localidades.estadosECidades[estadoSelecionado] ?: emptyList()
+
     var isNameError by remember { mutableStateOf(false) }
     var isEmailError by remember { mutableStateOf(false) }
+    var isEmailExistsError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
+    var isEstadoError by remember { mutableStateOf(false) }
+    var isCidadeError by remember { mutableStateOf(false) }
+    var mostrarSenha by remember { mutableStateOf(false) }
 
     var showDialogError by remember {
         mutableStateOf(false)
@@ -252,12 +272,19 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
         isNameError = nome.length < 3
         isEmailError = email.length < 3 || !Patterns.EMAIL_ADDRESS.matcher(email).matches()
         isPasswordError = senha.length < 3
-        return !isNameError && !isEmailError && !isPasswordError
+        isEstadoError = estadoSelecionado.isBlank()
+        isCidadeError = cidadeSelecionada.isBlank()
+        isEmailExistsError = false
+
+        return !isNameError &&
+                !isEmailError &&
+                !isPasswordError &&
+                !isEstadoError &&
+                !isCidadeError
     }
 
 
-    //var userRepository = SharedPreferencesUserRepository(LocalContext.current)
-    //var userRepository = RoomUserRepository(LocalContext.current)
+    var usuarioRepository = RoomUsuarioRepository(LocalContext.current)
 
 
     Column(
@@ -276,8 +303,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
             },
             modifier = Modifier
                 .padding(vertical = 0.dp)
-                .fillMaxWidth()
-                .height(78.dp),
+                .fillMaxWidth(),
             label = {
                 Text(
                     text = stringResource(R.string.seu_nome),
@@ -332,8 +358,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
             },
             modifier = Modifier
                 .padding(vertical = 0.dp)
-                .fillMaxWidth()
-                .height(78.dp),
+                .fillMaxWidth(),
             label = {
                 Text(
                     text = stringResource(R.string.seu_email),
@@ -364,7 +389,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 if (isEmailError) {
                     Icon(
                         imageVector = Icons.Default.Error,
-                        contentDescription = "Error",
+                        contentDescription = stringResource(R.string.erro),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -372,7 +397,7 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
             supportingText = {
                 if (isEmailError) {
                     Text(
-                        text = "Email is invalid",
+                        text = stringResource(R.string.email_inv_lido),
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End
@@ -389,11 +414,10 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
             },
             modifier = Modifier
                 .padding(vertical = 0.dp)
-                .fillMaxWidth()
-                .height(78.dp),
+                .fillMaxWidth(),
             label = {
                 Text(
-                    text = "Sua senha",
+                    text = stringResource(R.string.sua_senha),
                     style = MaterialTheme.typography.bodySmall,
                 )
             },
@@ -412,33 +436,45 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 )
             },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.NumberPassword,
-                imeAction = ImeAction.Done
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
             ),
 
-            /*trailingIcon = {
-                Icon (
-                    imageVector = Icons.Default.RemoveRedEye,
-                    contentDescription = stringResource(R.string.eye_icon),
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-            }
-           ,
-             */
             isError = isPasswordError,
             trailingIcon = {
                 if (isPasswordError) {
                     Icon(
                         imageVector = Icons.Default.Error,
-                        contentDescription = "Error",
+                        contentDescription = stringResource(R.string.erro),
                         tint = MaterialTheme.colorScheme.error
                     )
+                } else {
+                    val image = if (mostrarSenha) {
+                        Icons.Default.Visibility
+                    } else {
+                        Icons.Default.VisibilityOff
+                    }
+
+                    IconButton(
+                        onClick = { mostrarSenha = !mostrarSenha }
+                    ) {
+                        Icon(
+                            imageVector = image,
+                            contentDescription = "",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
+            },
+            visualTransformation = if (mostrarSenha) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
             },
             supportingText = {
                 if (isPasswordError) {
                     Text(
-                        text = "Password is invalid",
+                        text = stringResource(R.string.senha_inv_lida),
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End
@@ -447,110 +483,128 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
             }
         )
 
-        var expandedEstado by remember { mutableStateOf(false) }
-        var expandedCidade by remember { mutableStateOf(false) }
-        var estadoSelecionado by remember { mutableStateOf("") }
-        var cidadeSelecionada by remember { mutableStateOf("") }
 
         ExposedDropdownMenuBox(
             expanded = expandedEstado,
-            onExpandedChange = { expandedEstado = !expandedEstado },
-
-            ) {
+            onExpandedChange = { expandedEstado = !expandedEstado }
+        ) {
             OutlinedTextField(
                 value = estadoSelecionado,
                 onValueChange = {},
                 readOnly = true,
+                isError = isEstadoError,
                 label = {
                     Text(
                         text = "Estado",
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
-                placeholder = { Text("Selecione") },
+                placeholder = { Text(stringResource(R.string.selecione)) },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
+                    if (isEstadoError) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = stringResource(R.string.erro),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                },
+                supportingText = {
+                    if (isEstadoError) {
+                        Text(
+                            text = stringResource(R.string.selecione_um_estado),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
-
                 ),
                 modifier = Modifier
                     .padding(vertical = 0.dp)
                     .menuAnchor()
                     .fillMaxWidth()
-
             )
 
             ExposedDropdownMenu(
                 expanded = expandedEstado,
                 onDismissRequest = { expandedEstado = false }
-
-
             ) {
-                //para testes
-                DropdownMenuItem(
-                    text = { Text("Rio de Janeiro", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        estadoSelecionado = "Rio de Janeiro"
-                        expandedEstado = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("São Paulo", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        estadoSelecionado = "São Paulo"
-                        expandedEstado = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Minas Gerais", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        estadoSelecionado = "Minas Gerais"
-                        expandedEstado = false
-                    }
-                )
+                estados.forEach { estado ->
+                    DropdownMenuItem(
+                        text = { Text(estado, style = MaterialTheme.typography.bodySmall) },
+                        onClick = {
+                            estadoSelecionado = estado
+                            cidadeSelecionada = ""
+                            isEstadoError = false
+                            expandedEstado = false
+                        }
+                    )
+                }
             }
         }
-
         Spacer(Modifier.height(12.dp))
 
         ExposedDropdownMenuBox(
             expanded = expandedCidade,
-            onExpandedChange = { expandedCidade = !expandedCidade }
+            onExpandedChange = {
+                if (estadoSelecionado.isNotBlank()) {
+                    expandedCidade = !expandedCidade
+                }
+            }
         ) {
             OutlinedTextField(
                 value = cidadeSelecionada,
                 onValueChange = {},
                 readOnly = true,
+                isError = isCidadeError,
                 label = {
                     Text(
-                        text = "Cidade",
+                        text = stringResource(R.string.cidade),
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
-                placeholder = { Text("Selecione") },
+                placeholder = { Text(stringResource(R.string.selecione)) },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
+                    if (isCidadeError) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = stringResource(R.string.erro),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                },
+                supportingText = {
+                    if (isCidadeError) {
+                        Text(
+                            text = stringResource(R.string.selecione_uma_cidade),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth()
@@ -561,31 +615,16 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 expanded = expandedCidade,
                 onDismissRequest = { expandedCidade = false }
             ) {
-
-                //testes
-                DropdownMenuItem(
-                    text = { Text("Niterói", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        cidadeSelecionada = "Niterói"
-                        expandedCidade = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("São Gonçalo", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        cidadeSelecionada = "São Gonçalo"
-                        expandedCidade = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Rio de Janeiro", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        cidadeSelecionada = "Rio de Janeiro"
-                        expandedCidade = false
-                    }
-                )
+                cidades.forEach { cidade ->
+                    DropdownMenuItem(
+                        text = { Text(cidade, style = MaterialTheme.typography.bodySmall) },
+                        onClick = {
+                            cidadeSelecionada = cidade
+                            isCidadeError = false
+                            expandedCidade = false
+                        }
+                    )
+                }
             }
         }
 
@@ -593,35 +632,42 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
 
         Button(
             onClick = {
-                navController.navigate(Destination.Entrar.route)
+                isEmailExistsError = false
 
-                /*if (validate()) {
-                    userRepository.saveUser(
-                        User(name = name,
-                            email = email,
-                            password = password,
-                            userImage = convertBitmapToByteArray(profileImage)
+                if (validate()) {
+                    val usuarioExistente = usuarioRepository.getUserByEmail(email)
+
+                    if (usuarioExistente != null) {
+                        isEmailExistsError = true
+                        showDialogError = true
+                        isEmailError = true
+                    } else {
+                        usuarioRepository.saveUser(
+                            Usuario(
+                                nome = nome,
+                                email = email,
+                                senha = senha,
+                                estado = estadoSelecionado,
+                                cidade = cidadeSelecionada,
+                                imagemUsuario = convertBitmapToByteArray(imagemUsuario)
+                            )
                         )
-                    )
 
-                    showDialogSuccess = true
-
-
+                        showDialogSuccess = true
+                    }
                 } else {
                     showDialogError = true
-                }*/
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
             shape = RoundedCornerShape(16.dp),
-            elevation = ButtonDefaults
-                .buttonElevation(
-                    defaultElevation = 6.dp,
-                    pressedElevation = 2.dp
-                )
-        )
-        {
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 6.dp,
+                pressedElevation = 2.dp
+            )
+        ) {
             Text(
                 text = stringResource(R.string.criar_conta),
                 color = MaterialTheme.colorScheme.surface,
@@ -632,19 +678,19 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
         if (showDialogSuccess) {
 
             AlertDialog(
-                onDismissRequest = { showDialogError = false },
+                onDismissRequest = { showDialogSuccess = false },
                 title = {
                     Text(
-                        text = "Success"
+                        text = stringResource(R.string.conta_criada_com_sucesso)
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         showDialogSuccess = false
-                        //navController.navigate(ComposeNavigator.Destination.route)
+                        navController.navigate(Destination.Entrar.route)
                     }
                     ) {
-                        Text(text = "OK")
+                        Text(text = stringResource(R.string.avan_ar))
                     }
 
                 }
@@ -657,18 +703,18 @@ fun RegistrarFormulario(navController: NavController, profileImage: Bitmap) {
                 onDismissRequest = { showDialogError = false },
                 title = {
                     Text(
-                        text = "Error"
+                        text = stringResource(R.string.erroo)
                     )
 
                 },
                 text = {
                     Text(
-                        text = "Something went wrong"
+                        text = stringResource(R.string.algo_deu_errado)
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = { showDialogError = false }) {
-                        Text(text = "OK")
+                        Text(text = stringResource(R.string.tentar_novamente))
                     }
                 },
 

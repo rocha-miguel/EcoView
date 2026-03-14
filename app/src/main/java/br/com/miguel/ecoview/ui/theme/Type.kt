@@ -46,8 +46,8 @@ val Typography = Typography(
     ),
     titleSmall = TextStyle(
         fontFamily = ubuntuFamilly,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
+        fontWeight = FontWeight.Bold,
+        fontSize = 25.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
@@ -81,7 +81,7 @@ val Typography = Typography(
     ),
     displaySmall = TextStyle(
         fontFamily = ubuntuFamilly,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Bold,
         fontSize = 18.sp,
         lineHeight = 100.sp,
         letterSpacing = 0.5.sp

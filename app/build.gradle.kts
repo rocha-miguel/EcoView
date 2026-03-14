@@ -62,7 +62,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.room.runtime)
-    // annotationProcessor(libs.androidx.room.compiler)
+    annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.androidx.room.compiler)
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

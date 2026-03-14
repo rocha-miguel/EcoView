@@ -6,13 +6,25 @@ sealed class Destination(val route: String) {
 
     object Registrar : Destination("registrar")
 
-    object Principal : Destination("principal")
+     object Principal : Destination("principal/{email}") {
+         fun createRoute(email: String): String {
+             return "principal/$email"
+         }
+    }
 
     object Entrar : Destination("entrar")
 
-    object Historico : Destination("historico")
+    object Historico : Destination("historico/{email}") {
+        fun createRoute(email: String): String {
+            return "historico/$email"
+        }
+    }
 
-    object Atualizar : Destination("atualizar")
+    object Atualizar : Destination("atualizar/{email}") {
+        fun createRoute(email: String): String {
+            return "atualizar/$email"
+        }
+    }
 
 }
 

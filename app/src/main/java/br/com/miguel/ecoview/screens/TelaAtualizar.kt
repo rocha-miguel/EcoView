@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +46,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -64,28 +67,40 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
+import br.com.miguel.ecoview.model.Usuario
+import br.com.miguel.ecoview.navigation.Destination
+import br.com.miguel.ecoview.repository.RoomUsuarioRepository
+import br.com.miguel.ecoview.service.Localidades
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
+import br.com.miguel.ecoview.utils.convertBitmapToByteArray
+import br.com.miguel.ecoview.utils.convertByteArrayToBitmap
 
 
 @Composable
-fun TelaAtualizar(navController: NavController) {
+fun TelaAtualizar(navController: NavController, email: String?) {
 
     val context = LocalContext.current
+    val usuarioRepository = RoomUsuarioRepository(context)
+    val usuario = email?.let { usuarioRepository.getUserByEmail(it) }
 
-    val placeholderImage = BitmapFactory
-        .decodeResource(
-            Resources.getSystem(),
-            android.R.drawable.ic_menu_gallery
-        )
+    val placeholderImage = BitmapFactory.decodeResource(
+        Resources.getSystem(),
+        android.R.drawable.ic_menu_gallery
+    )
+
+    val imagemInicial =
+        usuario?.imagemUsuario?.let { convertByteArrayToBitmap(it) } ?: placeholderImage
 
     var profileImage by remember {
-        mutableStateOf<Bitmap>(placeholderImage)
+        mutableStateOf(imagemInicial)
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -95,23 +110,21 @@ fun TelaAtualizar(navController: NavController) {
             val source = ImageDecoder.createSource(context.contentResolver, uri)
             profileImage = ImageDecoder.decodeBitmap(source)
         } else {
-            profileImage = placeholderImage
+            profileImage = imagemInicial
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                MaterialTheme.colorScheme.background
-            )
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopStartCard(modifier = Modifier.align(Alignment.TopStart))
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .align(alignment = Alignment.Center)
+                .align(Alignment.Center)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -119,7 +132,7 @@ fun TelaAtualizar(navController: NavController) {
             ComponenteTituloAtualizar()
             Spacer(modifier = Modifier.height(16.dp))
             ImagemUsuarioAtualizar(profileImage, launcher)
-            AtualizarFormulario(navController, profileImage)
+            AtualizarFormulario(navController, profileImage, email)
         }
 
         BottomEndCard(modifier = Modifier.align(Alignment.BottomEnd))
@@ -134,7 +147,7 @@ fun TelaAtualizar(navController: NavController) {
 @Composable
 private fun TelaAtualizarPreview() {
     EcoViewTheme() {
-        TelaAtualizar(rememberNavController())
+        TelaAtualizar(rememberNavController(), "")
     }
 }
 
@@ -165,36 +178,35 @@ fun ComponenteTituloAtualizar() {
 }
 
 @Composable
-fun ImagemUsuarioAtualizar(profileImage: Bitmap, launcher: ManagedActivityResultLauncher<String, Uri?>) {
-
+fun ImagemUsuarioAtualizar(
+    profileImage: Bitmap,
+    launcher: ManagedActivityResultLauncher<String, Uri?>
+) {
     Box(
         modifier = Modifier
             .size(96.dp)
-            .clickable(
-                onClick = {
-                    launcher.launch("image/*")
-                }
-            )
+            .clickable {
+                launcher.launch("image/*")
+            }
     ) {
         Image(
             modifier = Modifier
                 .size(96.dp)
                 .align(Alignment.Center)
-                .clip(shape = CircleShape)
+                .clip(CircleShape)
                 .fillMaxSize(),
             bitmap = profileImage.asImageBitmap(),
             contentDescription = stringResource(R.string.imagem),
             contentScale = ContentScale.Crop
         )
+
         Icon(
             imageVector = Icons.Default.PhotoCamera,
             contentDescription = stringResource(R.string.c_mera_cone),
-            modifier = Modifier
-                .align(Alignment.BottomEnd),
+            modifier = Modifier.align(Alignment.BottomEnd),
             tint = MaterialTheme.colorScheme.primary
         )
     }
-
 }
 
 @Preview(
@@ -225,23 +237,42 @@ private fun ComponenteTituloPreview() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
+fun AtualizarFormulario(
+    navController: NavController,
+    imagemUsuario: Bitmap,
+    usuarioEmail: String?
+) {
+
+    var usuarioRepository = RoomUsuarioRepository(LocalContext.current)
+
+    var usuario = usuarioRepository.getUserByEmail(usuarioEmail!!)
 
     var nome by remember {
-        mutableStateOf("")
+        mutableStateOf(usuario!!.nome)
     }
 
     var email by remember {
-        mutableStateOf("")
+        mutableStateOf(usuario!!.email)
     }
 
     var senha by remember {
-        mutableStateOf("")
+        mutableStateOf(usuario!!.senha)
     }
+
+    var expandedEstado by remember { mutableStateOf(false) }
+    var expandedCidade by remember { mutableStateOf(false) }
+    var estadoSelecionado by remember { mutableStateOf(usuario!!.estado) }
+    var cidadeSelecionada by remember { mutableStateOf(usuario!!.cidade) }
+    var mostrarSenha by remember { mutableStateOf(false) }
+    val estados = Localidades.estadosECidades.keys.toList()
+    val cidades = Localidades.estadosECidades[estadoSelecionado] ?: emptyList()
 
     var isNameError by remember { mutableStateOf(false) }
     var isEmailError by remember { mutableStateOf(false) }
+    var isEmailExistsError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
+    var isEstadoError by remember { mutableStateOf(false) }
+    var isCidadeError by remember { mutableStateOf(false) }
 
     var showDialogError by remember {
         mutableStateOf(false)
@@ -255,12 +286,20 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
         isNameError = nome.length < 3
         isEmailError = email.length < 3 || !Patterns.EMAIL_ADDRESS.matcher(email).matches()
         isPasswordError = senha.length < 3
-        return !isNameError && !isEmailError && !isPasswordError
+        isEstadoError = estadoSelecionado.isBlank()
+        isCidadeError = cidadeSelecionada.isBlank()
+        isEmailExistsError = false
+
+        return !isNameError &&
+                !isEmailError &&
+                !isPasswordError &&
+                !isEstadoError &&
+                !isCidadeError
     }
 
-
-    //var userRepository = SharedPreferencesUserRepository(LocalContext.current)
-    //var userRepository = RoomUserRepository(LocalContext.current)
+    var showDeleteDialog by remember {
+        mutableStateOf(false)
+    }
 
 
     Column(
@@ -279,8 +318,7 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
             },
             modifier = Modifier
                 .padding(vertical = 0.dp)
-                .fillMaxWidth()
-                .height(78.dp),
+                .fillMaxWidth(),
             label = {
                 Text(
                     text = stringResource(R.string.seu_nome),
@@ -335,8 +373,7 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
             },
             modifier = Modifier
                 .padding(vertical = 0.dp)
-                .fillMaxWidth()
-                .height(78.dp),
+                .fillMaxWidth(),
             label = {
                 Text(
                     text = stringResource(R.string.seu_email),
@@ -367,7 +404,7 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
                 if (isEmailError) {
                     Icon(
                         imageVector = Icons.Default.Error,
-                        contentDescription = "Error",
+                        contentDescription = stringResource(R.string.erro),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -375,7 +412,7 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
             supportingText = {
                 if (isEmailError) {
                     Text(
-                        text = "Email is invalid",
+                        text = stringResource(R.string.email_inv_lido),
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End
@@ -392,11 +429,10 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
             },
             modifier = Modifier
                 .padding(vertical = 0.dp)
-                .fillMaxWidth()
-                .height(78.dp),
+                .fillMaxWidth(),
             label = {
                 Text(
-                    text = "Sua senha",
+                    text = stringResource(R.string.sua_senha),
                     style = MaterialTheme.typography.bodySmall,
                 )
             },
@@ -415,33 +451,45 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
                 )
             },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.NumberPassword,
-                imeAction = ImeAction.Done
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
             ),
 
-            /*trailingIcon = {
-                Icon (
-                    imageVector = Icons.Default.RemoveRedEye,
-                    contentDescription = stringResource(R.string.eye_icon),
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-            }
-           ,
-             */
             isError = isPasswordError,
             trailingIcon = {
                 if (isPasswordError) {
                     Icon(
                         imageVector = Icons.Default.Error,
-                        contentDescription = "Error",
+                        contentDescription = stringResource(R.string.erro),
                         tint = MaterialTheme.colorScheme.error
                     )
+                } else {
+                    val image = if (mostrarSenha) {
+                        Icons.Default.Visibility
+                    } else {
+                        Icons.Default.VisibilityOff
+                    }
+
+                    IconButton(
+                        onClick = { mostrarSenha = !mostrarSenha }
+                    ) {
+                        Icon(
+                            imageVector = image,
+                            contentDescription = "",
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
+            },
+            visualTransformation = if (mostrarSenha) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
             },
             supportingText = {
                 if (isPasswordError) {
                     Text(
-                        text = "Password is invalid",
+                        text = stringResource(R.string.senha_inv_lida),
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End
@@ -450,110 +498,128 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
             }
         )
 
-        var expandedEstado by remember { mutableStateOf(false) }
-        var expandedCidade by remember { mutableStateOf(false) }
-        var estadoSelecionado by remember { mutableStateOf("") }
-        var cidadeSelecionada by remember { mutableStateOf("") }
 
         ExposedDropdownMenuBox(
             expanded = expandedEstado,
-            onExpandedChange = { expandedEstado = !expandedEstado },
-
-            ) {
+            onExpandedChange = { expandedEstado = !expandedEstado }
+        ) {
             OutlinedTextField(
                 value = estadoSelecionado,
                 onValueChange = {},
                 readOnly = true,
+                isError = isEstadoError,
                 label = {
                     Text(
                         text = "Estado",
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
-                placeholder = { Text("Selecione") },
+                placeholder = { Text(stringResource(R.string.selecione)) },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
+                    if (isEstadoError) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = stringResource(R.string.erro),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                },
+                supportingText = {
+                    if (isEstadoError) {
+                        Text(
+                            text = stringResource(R.string.selecione_um_estado),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
-
                 ),
                 modifier = Modifier
                     .padding(vertical = 0.dp)
                     .menuAnchor()
                     .fillMaxWidth()
-
             )
 
             ExposedDropdownMenu(
                 expanded = expandedEstado,
                 onDismissRequest = { expandedEstado = false }
-
-
             ) {
-                //para testes
-                DropdownMenuItem(
-                    text = { Text("Rio de Janeiro", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        estadoSelecionado = "Rio de Janeiro"
-                        expandedEstado = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("São Paulo", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        estadoSelecionado = "São Paulo"
-                        expandedEstado = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Minas Gerais", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        estadoSelecionado = "Minas Gerais"
-                        expandedEstado = false
-                    }
-                )
+                estados.forEach { estado ->
+                    DropdownMenuItem(
+                        text = { Text(estado, style = MaterialTheme.typography.bodySmall) },
+                        onClick = {
+                            estadoSelecionado = estado
+                            cidadeSelecionada = ""
+                            isEstadoError = false
+                            expandedEstado = false
+                        }
+                    )
+                }
             }
         }
-
         Spacer(Modifier.height(12.dp))
 
         ExposedDropdownMenuBox(
             expanded = expandedCidade,
-            onExpandedChange = { expandedCidade = !expandedCidade }
+            onExpandedChange = {
+                if (estadoSelecionado.isNotBlank()) {
+                    expandedCidade = !expandedCidade
+                }
+            }
         ) {
             OutlinedTextField(
                 value = cidadeSelecionada,
                 onValueChange = {},
                 readOnly = true,
+                isError = isCidadeError,
                 label = {
                     Text(
-                        text = "Cidade",
+                        text = stringResource(R.string.cidade),
                         style = MaterialTheme.typography.bodySmall
                     )
                 },
-                placeholder = { Text("Selecione") },
+                placeholder = { Text(stringResource(R.string.selecione)) },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary
-                    )
+                    if (isCidadeError) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = stringResource(R.string.erro),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                },
+                supportingText = {
+                    if (isCidadeError) {
+                        Text(
+                            text = stringResource(R.string.selecione_uma_cidade),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth()
@@ -564,31 +630,16 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
                 expanded = expandedCidade,
                 onDismissRequest = { expandedCidade = false }
             ) {
-
-                //testes
-                DropdownMenuItem(
-                    text = { Text("Niterói", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        cidadeSelecionada = "Niterói"
-                        expandedCidade = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("São Gonçalo", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        cidadeSelecionada = "São Gonçalo"
-                        expandedCidade = false
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Rio de Janeiro", style = MaterialTheme.typography.bodySmall) },
-                    onClick = {
-                        cidadeSelecionada = "Rio de Janeiro"
-                        expandedCidade = false
-                    }
-                )
+                cidades.forEach { cidade ->
+                    DropdownMenuItem(
+                        text = { Text(cidade, style = MaterialTheme.typography.bodySmall) },
+                        onClick = {
+                            cidadeSelecionada = cidade
+                            isCidadeError = false
+                            expandedCidade = false
+                        }
+                    )
+                }
             }
         }
 
@@ -601,21 +652,33 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
         ) {
             Button(
                 onClick = {
-                    /*if (validate()) {
-                    userRepository.saveUser(
-                        User(name = name,
-                            email = email,
-                            password = password,
-                            userImage = convertBitmapToByteArray(profileImage)
-                        )
-                    )
+                    isEmailExistsError = false
 
-                    showDialogSuccess = true
+                    if (validate()) {
+                        val usuarioExistente = usuarioRepository.getUserByEmail(email)
 
+                        if (usuarioExistente != null && usuarioExistente.id != usuario!!.id) {
+                            isEmailExistsError = true
+                            showDialogError = true
+                            isEmailError = true
+                        } else {
+                            usuarioRepository.updateUser(
+                                Usuario(
+                                    id = usuario!!.id,
+                                    nome = nome,
+                                    email = email,
+                                    senha = senha,
+                                    estado = estadoSelecionado,
+                                    cidade = cidadeSelecionada,
+                                    imagemUsuario = convertBitmapToByteArray(imagemUsuario)
+                                )
+                            )
 
-                } else {
-                    showDialogError = true
-                }*/
+                            showDialogSuccess = true
+                        }
+                    } else {
+                        showDialogError = true
+                    }
                 },
                 colors = ButtonDefaults
                     .buttonColors(
@@ -648,7 +711,9 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
             }
 
             Button(
-                onClick = {},
+                onClick = {
+                    showDeleteDialog = true
+                },
                 colors = ButtonDefaults
                     .buttonColors(
                         containerColor = Color(0xFFD90C0C)
@@ -682,19 +747,19 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
         if (showDialogSuccess) {
 
             AlertDialog(
-                onDismissRequest = { showDialogError = false },
+                onDismissRequest = { showDialogSuccess = false },
                 title = {
                     Text(
-                        text = "Success"
+                        text = stringResource(R.string.conta_atualizada)
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         showDialogSuccess = false
-                        //navController.navigate(ComposeNavigator.Destination.route)
+                        navController.navigate(Destination.Principal.createRoute(email))
                     }
                     ) {
-                        Text(text = "OK")
+                        Text(text = stringResource(R.string.avan_ar))
                     }
 
                 }
@@ -707,22 +772,58 @@ fun AtualizarFormulario(navController: NavController, profileImage: Bitmap) {
                 onDismissRequest = { showDialogError = false },
                 title = {
                     Text(
-                        text = "Error"
+                        text = stringResource(R.string.erroo)
                     )
 
                 },
                 text = {
                     Text(
-                        text = "Something went wrong"
+                        text = stringResource(R.string.algo_deu_errado)
                     )
                 },
                 confirmButton = {
                     TextButton(onClick = { showDialogError = false }) {
-                        Text(text = "OK")
+                        Text(text = stringResource(R.string.tentar_novamente))
                     }
                 },
 
                 )
+        }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = {
+                    Text(
+                        text = stringResource(R.string.excluir_conta)
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(R.string.tem_certeza_que_deseja_excluir_sua_conta)
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        if (usuario != null) {
+                            usuarioRepository.deleteUser(usuario)
+                            navController.navigate(Destination.Entrar.route)
+
+                        }
+                    }) {
+                        Text(text = stringResource(R.string.excluir))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+
+                    }) {
+                        Text(text = stringResource(R.string.cancelar))
+                    }
+                }
+            )
         }
 
 

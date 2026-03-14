@@ -1,6 +1,7 @@
 package br.com.miguel.ecoview.screens
 
 import android.content.res.Configuration
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Visibility
@@ -36,16 +39,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
 import br.com.miguel.ecoview.navigation.Destination
+import br.com.miguel.ecoview.repository.RoomUsuarioRepository
+import br.com.miguel.ecoview.repository.UsuarioRepository
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 
 @Composable
@@ -113,6 +121,9 @@ fun EntrarFormulario(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var mostrarSenha by remember { mutableStateOf(false) }
+    var authenticateError by remember { mutableStateOf(false) }
+
+    var usuarioRepository: UsuarioRepository = RoomUsuarioRepository(LocalContext.current)
 
     Column(
         modifier = Modifier
@@ -165,7 +176,7 @@ fun EntrarFormulario(navController: NavController) {
                 .fillMaxWidth(),
             label = {
                 Text(
-                    text = "Sua senha",
+                    text = stringResource(R.string.sua_senha),
                     style = MaterialTheme.typography.bodySmall,
                 )
             },
@@ -201,14 +212,31 @@ fun EntrarFormulario(navController: NavController) {
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.NumberPassword,
                 imeAction = ImeAction.Done
-            )
+            ),
+            visualTransformation = if (mostrarSenha) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-                navController.navigate(Destination.Principal.route)
+                val authenticate = usuarioRepository.login(email, senha)
+
+                if (authenticate) {
+                    val usuario = usuarioRepository.getUserByEmail(email)
+
+                    if (usuario != null) {
+                        navController.navigate(Destination.Principal.createRoute(usuario.email))
+                    } else {
+                        authenticateError = true
+                    }
+                } else {
+                    authenticateError = true
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -226,13 +254,35 @@ fun EntrarFormulario(navController: NavController) {
             )
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (authenticateError) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = stringResource(R.string.erro),
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.email_ou_senha_inv_lidos),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
             Text(
-                text = "Ainda não tem uma conta? ",
+                text = stringResource(R.string.ainda_n_o_tem_uma_conta),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -242,7 +292,7 @@ fun EntrarFormulario(navController: NavController) {
                 }
             ) {
                 Text(
-                    text = "Registrar-se",
+                    text = stringResource(R.string.registrar_se),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold

@@ -1,6 +1,7 @@
 package br.com.miguel.ecoview.screens
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -46,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,15 +57,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -70,26 +77,30 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
 import br.com.miguel.ecoview.navigation.Destination
+import br.com.miguel.ecoview.repository.RoomUsuarioRepository
+import br.com.miguel.ecoview.repository.UsuarioRepository
+import br.com.miguel.ecoview.service.CalculadoraCO2
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
+import br.com.miguel.ecoview.utils.convertByteArrayToBitmap
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun TelaPrincipal(navController: NavHostController) {
+fun TelaPrincipal(navController: NavHostController, email: String?) {
 
     var showBottomSheet by remember { mutableStateOf(false) }
+    var resultadoCO2 by remember { mutableStateOf<Double?>(null) }
 
     Surface(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         Scaffold(
             topBar = {
-                MyTopAppBar(navController)
+                MyTopAppBar(navController, email!!)
             },
             bottomBar = {
-                MyBottomAppBar(navController)
+                MyBottomAppBar(navController, email!!)
             },
             floatingActionButton = {
                 FloatingActionButton(
@@ -105,56 +116,135 @@ fun TelaPrincipal(navController: NavHostController) {
                         tint = MaterialTheme.colorScheme.surface
                     )
                 }
-
             }
-        ) {
+        ) { paddingValues ->
 
+            ModalCalculo(
+                showBottomSheet = showBottomSheet,
+                onDismiss = { showBottomSheet = false },
+                onCalcular = { resultado ->
+                    resultadoCO2 = resultado
+                }
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                Text(
+                    text = "Último cálculo",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 5.dp)
+                )
+                Spacer(modifier = Modifier.padding(vertical = 12.dp))
+                UltimoCalculoCard(resultadoCO2)
+            }
 
             /*ContentScreen(
                 modifier = Modifier.padding(paddingValues),
                 navController
             )*/
-
         }
-
-        ModalCalculo(
-            showBottomSheet = showBottomSheet,
-            onDismiss = { showBottomSheet = false }
-        )
-
-
     }
 }
 
+@Composable
+fun UltimoCalculoCard(resultadoCO2: Double?) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            Color.Transparent
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.onPrimary,
+                            MaterialTheme.colorScheme.secondary
+                        )
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .size(height = 130.dp, width = 300.dp)
+
+                ,
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (resultadoCO2 != null) {
+                    stringResource(R.string.impacto_0f_kg_de_co).format(resultadoCO2)
+                } else {
+                    stringResource(R.string.impacto)
+                },
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface
+
+            )
+
+            Text(
+                getMensagemImpacto(resultadoCO2),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+fun getMensagemImpacto(resultadoCO2: Double?): String {
+    if (resultadoCO2 == null) {
+        return "Faça um cálculo para ver seu impacto"
+    }
+
+    return when {
+        resultadoCO2 <= 5 -> "Seu impacto foi baixo. Você está fazendo escolhas mais sustentáveis."
+        resultadoCO2 <= 15 -> "Seu impacto foi moderado. Pequenas mudanças já podem melhorar esse resultado."
+        resultadoCO2 <= 30 -> "Seu impacto foi alto. Vale rever transporte, alimentação e consumo de energia."
+        else -> "Seu impacto foi muito alto. Tente adotar hábitos mais sustentáveis no dia a dia."
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun UltimoCalculoCardPreview() {
+    EcoViewTheme() {
+        UltimoCalculoCard(5.0)
+    }
+}
 
 @Preview
 @Composable
 private fun TelaPrincipalPreview() {
     EcoViewTheme {
-        TelaPrincipal(rememberNavController())
+        //TelaPrincipal(rememberNavController(), usuarioId)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyTopAppBar(navController: NavController) {
-    /*//val userRepository: UserRepository = SharedPreferencesUserRepository(LocalContext.current)
-    val userRepository: UserRepository = RoomUserRepository(LocalContext.current)
+fun MyTopAppBar(navController: NavController, email: String? = "") {
 
-    val user = userRepository.getUserByEmail(email)*/
+    val usuarioRepository: UsuarioRepository = RoomUsuarioRepository(LocalContext.current)
 
-    /*var profileBitmap by remember {
+    val usuario = usuarioRepository.getUserByEmail(email!!)
+
+    var profileBitmap by remember {
         mutableStateOf<Bitmap>(
-            convertByteArrayToBitmap(
-                imageArray = TODO()
-            )
+            convertByteArrayToBitmap(usuario!!.imagemUsuario!!)
         )
-    }*/
+    }
 
     TopAppBar(
         modifier = Modifier
             .fillMaxWidth(),
-        //.height(60.dp),
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background,
 
@@ -170,17 +260,21 @@ fun MyTopAppBar(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically,
 
                 ) {
-                Column {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = "Olá, ",
+                        text = "Olá, ${usuario!!.nome}",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold
 
                     )
                     Text(
-                        text = "",
-                        style = MaterialTheme.typography.displaySmall
+                        text = usuario.email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiary
                     )
                 }
 
@@ -189,7 +283,7 @@ fun MyTopAppBar(navController: NavController) {
                         .size(48.dp)
                         .clickable(
                             onClick = {
-                                navController.navigate(Destination.Atualizar.route)
+                                navController.navigate(Destination.Atualizar.createRoute(email!!))
 
                             }
                         ),
@@ -204,8 +298,7 @@ fun MyTopAppBar(navController: NavController) {
                     )
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.light_bulb),
-                        //bitmap = profileBitmap.asImageBitmap(),
+                        bitmap = profileBitmap.asImageBitmap(),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         contentDescription = stringResource(R.string.imagem_usu_rio)
@@ -229,11 +322,17 @@ private fun MyTopAppBarPreview() {
 @Composable
 fun ModalCalculo(
     showBottomSheet: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onCalcular: (Double) -> Unit
 ) {
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = onDismiss,
+            sheetState = sheetState,
             containerColor = Color.Transparent
         ) {
             Card(
@@ -280,6 +379,9 @@ fun ModalCalculo(
                         mutableStateOf("")
                     }
 
+                    var expandedTipo by remember { mutableStateOf(false) }
+                    var tipoSelecionado by remember { mutableStateOf("") }
+
 
 
                     OutlinedTextField(
@@ -318,8 +420,7 @@ fun ModalCalculo(
                         )
                     )
 
-                    var expandedTipo by remember { mutableStateOf(false) }
-                    var tipoSelecionado by remember { mutableStateOf("") }
+
 
                     ExposedDropdownMenuBox(
                         expanded = expandedTipo,
@@ -331,7 +432,7 @@ fun ModalCalculo(
                             readOnly = true,
                             label = {
                                 Text(
-                                    text = "Alimentação",
+                                    text = stringResource(R.string.alimenta_o),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.surface
                                 )
@@ -380,7 +481,7 @@ fun ModalCalculo(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "Muita carne",
+                                        stringResource(R.string.muita_carne),
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 },
@@ -406,7 +507,7 @@ fun ModalCalculo(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "Vegetariana",
+                                        stringResource(R.string.vegetariana),
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 },
@@ -419,7 +520,7 @@ fun ModalCalculo(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "Vegana",
+                                        stringResource(R.string.vegana),
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 },
@@ -442,7 +543,7 @@ fun ModalCalculo(
                             .fillMaxWidth(),
                         label = {
                             Text(
-                                text = "Consumo de energia",
+                                text = stringResource(R.string.consumo_de_energia),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.surface
                             )
@@ -471,7 +572,19 @@ fun ModalCalculo(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = {},
+                        onClick = {
+                            val kmDouble = km.toDoubleOrNull() ?: 0.0
+                            val energiaDouble = energia.toDoubleOrNull() ?: 0.0
+
+                            val resultado = CalculadoraCO2.calcular(
+                                kmRodados = kmDouble,
+                                alimentacao = tipoSelecionado,
+                                consumoEnergia = energiaDouble
+                            )
+
+                            onCalcular(resultado)
+                            onDismiss()
+                        },
                         modifier = Modifier
                             .size(width = 150.dp, height = 48.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -489,7 +602,7 @@ fun ModalCalculo(
                         )
                     ) {
                         Text(
-                            text = "Calcular",
+                            text = stringResource(R.string.calcular),
                             color = MaterialTheme.colorScheme.surface,
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -515,24 +628,27 @@ data class BottomNavigationItem(
 )
 
 @Composable
-fun MyBottomAppBar(navController: NavHostController) {
+fun MyBottomAppBar(navController: NavHostController, email: String?) {
     val items = listOf(
         BottomNavigationItem(
             stringResource(R.string.hist_rico),
             icon = Icons.Default.History,
-            route = Destination.Historico.route
+            route = Destination.Historico.createRoute(email!!)
         ),
         BottomNavigationItem(
             stringResource(R.string.in_cio),
             icon = Icons.Default.Home,
-            route = Destination.Principal.route
+            route = Destination.Principal.createRoute(email!!)
         ),
+
         BottomNavigationItem(
             stringResource(R.string.perfil),
             icon = Icons.Default.Person,
-            route = Destination.Atualizar.route
-        ),
+            route = Destination.Atualizar.createRoute(email!!)
+        )
     )
+
+
 
     Surface(
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
