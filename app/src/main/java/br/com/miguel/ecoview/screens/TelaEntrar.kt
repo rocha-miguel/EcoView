@@ -210,7 +210,7 @@ fun EntrarFormulario(navController: NavController) {
                 }
             },
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.NumberPassword,
+                keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Done
             ),
             visualTransformation = if (mostrarSenha) {

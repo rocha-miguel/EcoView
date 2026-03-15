@@ -25,9 +25,9 @@ interface HistoricoCo2Dao {
     @Query("SELECT * FROM historico_co2 WHERE id = :id")
     fun getHistoricoById(id: Int): HistoricoCO2?
 
-    @Query("SELECT * FROM historico_co2 WHERE usuario_id = :usuarioId")
+    @Query("SELECT * FROM historico_co2 WHERE usuario_id = :usuarioId ORDER BY id DESC")
     fun getHistoricoByUsuarioId(usuarioId: Int): List<HistoricoCO2>
 
-    @Query("SELECT * FROM historico_co2 WHERE usuario_id = :usuarioId")
+    @Query("SELECT * FROM historico_co2 WHERE usuario_id = :usuarioId ORDER BY id DESC")
     fun getUltimoHistoricoByUsuarioId(usuarioId: Int): HistoricoCO2?
 }

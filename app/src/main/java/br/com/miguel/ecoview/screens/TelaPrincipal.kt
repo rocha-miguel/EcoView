@@ -1,13 +1,14 @@
 package br.com.miguel.ecoview.screens
 
-import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,7 +33,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -57,7 +58,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -76,7 +76,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
+import br.com.miguel.ecoview.model.HistoricoCO2
 import br.com.miguel.ecoview.navigation.Destination
+import br.com.miguel.ecoview.repository.RoomHistoricoCO2Repository
 import br.com.miguel.ecoview.repository.RoomUsuarioRepository
 import br.com.miguel.ecoview.repository.UsuarioRepository
 import br.com.miguel.ecoview.service.CalculadoraCO2
@@ -85,22 +87,27 @@ import br.com.miguel.ecoview.utils.convertByteArrayToBitmap
 
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun TelaPrincipal(navController: NavHostController, email: String?) {
 
     var showBottomSheet by remember { mutableStateOf(false) }
-    var resultadoCO2 by remember { mutableStateOf<Double?>(null) }
+
+    val usuarioRepository: UsuarioRepository = RoomUsuarioRepository(LocalContext.current)
+    val historicoRepository = RoomHistoricoCO2Repository(LocalContext.current)
+
+    val usuario = usuarioRepository.getUserByEmail(email!!)
+    val ultimoHistorico = historicoRepository.getUltimoHistoricoByUsuarioId(usuario!!.id)
+    var resultadoExibido = ultimoHistorico?.resultadoCo2
 
     Surface(
         modifier = Modifier.fillMaxSize()
     ) {
         Scaffold(
             topBar = {
-                MyTopAppBar(navController, email!!)
+                MyTopAppBar(navController, email)
             },
             bottomBar = {
-                MyBottomAppBar(navController, email!!)
+                MyBottomAppBar(navController, email)
             },
             floatingActionButton = {
                 FloatingActionButton(
@@ -122,9 +129,9 @@ fun TelaPrincipal(navController: NavHostController, email: String?) {
             ModalCalculo(
                 showBottomSheet = showBottomSheet,
                 onDismiss = { showBottomSheet = false },
-                onCalcular = { resultado ->
-                    resultadoCO2 = resultado
-                }
+                onCalcular = {resultado ->
+                    navController.navigate(Destination.Principal.createRoute(email)) },
+                email
             )
 
             Column(
@@ -132,20 +139,51 @@ fun TelaPrincipal(navController: NavHostController, email: String?) {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                CardApi()
+                Spacer(modifier = Modifier.padding(vertical = 10.dp))
                 Text(
-                    text = "Último cálculo",
+                    text = stringResource(R.string.ltimo_c_lculo),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.padding(horizontal = 5.dp)
                 )
-                Spacer(modifier = Modifier.padding(vertical = 12.dp))
-                UltimoCalculoCard(resultadoCO2)
+                Spacer(modifier = Modifier.padding(vertical = 10.dp))
+                UltimoCalculoCard(resultadoExibido)
             }
+        }
+    }
+}
+@Composable
+fun CardApi() {
 
-            /*ContentScreen(
-                modifier = Modifier.padding(paddingValues),
-                navController
-            )*/
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            Color.Transparent
+        ),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.onPrimary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .size(height = 438.dp, width = 324.dp),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {}
+
         }
     }
 }
@@ -159,42 +197,45 @@ fun UltimoCalculoCard(resultadoCO2: Double?) {
             Color.Transparent
         ),
     ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.onPrimary,
-                            MaterialTheme.colorScheme.secondary
-                        )
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .size(height = 130.dp, width = 300.dp)
-
-                ,
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = if (resultadoCO2 != null) {
-                    stringResource(R.string.impacto_0f_kg_de_co).format(resultadoCO2)
-                } else {
-                    stringResource(R.string.impacto)
-                },
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurface
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.onPrimary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .size(height = 137.dp, width = 358.dp),
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = if (resultadoCO2 != null) {
+                        stringResource(R.string.impacto_0f_kg_de_co).format(resultadoCO2)
+                    } else {
+                        stringResource(R.string.impacto)
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
 
-            )
+                )
 
-            Text(
-                getMensagemImpacto(resultadoCO2),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+                Text(
+                    getMensagemImpacto(resultadoCO2),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -283,7 +324,7 @@ fun MyTopAppBar(navController: NavController, email: String? = "") {
                         .size(48.dp)
                         .clickable(
                             onClick = {
-                                navController.navigate(Destination.Atualizar.createRoute(email!!))
+                                navController.navigate(Destination.Atualizar.createRoute(email))
 
                             }
                         ),
@@ -323,8 +364,16 @@ private fun MyTopAppBarPreview() {
 fun ModalCalculo(
     showBottomSheet: Boolean,
     onDismiss: () -> Unit,
-    onCalcular: (Double) -> Unit
+    onCalcular: (Double) -> Unit,
+    email: String?
 ) {
+
+    val usuarioRepository: UsuarioRepository = RoomUsuarioRepository(LocalContext.current)
+
+    val usuario = usuarioRepository.getUserByEmail(email!!)
+
+
+    val historicoRepository = RoomHistoricoCO2Repository(LocalContext.current)
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
@@ -494,7 +543,7 @@ fun ModalCalculo(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "Pouca carne",
+                                        stringResource(R.string.pouca_carne),
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 },
@@ -584,6 +633,18 @@ fun ModalCalculo(
 
                             onCalcular(resultado)
                             onDismiss()
+
+                            historicoRepository.saveHistorico(
+                                HistoricoCO2(
+                                    usuarioId = usuario!!.id,
+                                    kmRodados = kmDouble,
+                                    alimentacao = tipoSelecionado,
+                                    consumoEnergia = energiaDouble,
+                                    resultadoCo2 = resultado
+                                )
+                            )
+
+
                         },
                         modifier = Modifier
                             .size(width = 150.dp, height = 48.dp),

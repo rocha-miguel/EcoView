@@ -60,4 +60,10 @@
     <string name="excluir_conta">Excluir conta</string>
     <string name="impacto_0f_kg_de_co">Impacto: %.0f kg de CO₂</string>
     <string name="impacto">Impacto: --</string>
+    <string name="ltimo_c_lculo">Último cálculo</string>
+    <string name="pouca_carne">Pouca carne</string>
+    <string name="nenhum_c_lculo_salvo_ainda">Nenhum cálculo salvo ainda.</string>
+    <string name="km_rodados">Km rodados: %.1f km</string>
+    <string name="alimenta_oo">Alimentação: %1$s</string>
+    <string name="consumo_de_energiaa">Consumo de energia: %.0f kWh</string>
 </resources>
