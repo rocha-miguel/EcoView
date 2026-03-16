@@ -51,6 +51,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,11 +78,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import br.com.miguel.ecoview.R
 import br.com.miguel.ecoview.model.HistoricoCO2
+import br.com.miguel.ecoview.model.WeatherResponse
+import br.com.miguel.ecoview.model.WeatherUiModel
 import br.com.miguel.ecoview.navigation.Destination
 import br.com.miguel.ecoview.repository.RoomHistoricoCO2Repository
 import br.com.miguel.ecoview.repository.RoomUsuarioRepository
 import br.com.miguel.ecoview.repository.UsuarioRepository
 import br.com.miguel.ecoview.service.CalculadoraCO2
+import br.com.miguel.ecoview.service.Localidades
+import br.com.miguel.ecoview.service.RetrofitInstance
 import br.com.miguel.ecoview.ui.theme.EcoViewTheme
 import br.com.miguel.ecoview.utils.convertByteArrayToBitmap
 
@@ -92,12 +97,45 @@ fun TelaPrincipal(navController: NavHostController, email: String?) {
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
+    var weather by remember { mutableStateOf<WeatherUiModel?>(null) }
+    var weatherError by remember { mutableStateOf<String?>(null) }
+    var isLoadingWeather by remember { mutableStateOf(true) }
+
     val usuarioRepository: UsuarioRepository = RoomUsuarioRepository(LocalContext.current)
     val historicoRepository = RoomHistoricoCO2Repository(LocalContext.current)
 
     val usuario = usuarioRepository.getUserByEmail(email!!)
     val ultimoHistorico = historicoRepository.getUltimoHistoricoByUsuarioId(usuario!!.id)
     var resultadoExibido = ultimoHistorico?.resultadoCo2
+
+    LaunchedEffect(usuario.cidade, usuario.estado) {
+        isLoadingWeather = true
+        weatherError = null
+
+        try {
+            val cidadeInfo = Localidades.buscarCoordenadas(
+                estado = usuario.estado,
+                cidade = usuario.cidade
+            )
+
+            if (cidadeInfo == null) {
+                weatherError = "Cidade não encontrada nas localidades"
+                weather = null
+            } else {
+                val response = RetrofitInstance.weatherApi.getWeather(
+                    latitude = cidadeInfo.latitude,
+                    longitude = cidadeInfo.longitude
+                )
+
+                weather = response.toWeatherUiModel(cidadeInfo.nome)
+            }
+        } catch (e: Exception) {
+            weatherError = e.message ?: "Erro ao carregar o clima"
+            weather = null
+        } finally {
+            isLoadingWeather = false
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -139,7 +177,29 @@ fun TelaPrincipal(navController: NavHostController, email: String?) {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                CardApi()
+                when {
+                    isLoadingWeather -> {
+                        Text(
+                            text = "Carregando clima...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                    }
+
+                    weather != null -> {
+                        CardApi(weather = weather!!)
+                    }
+
+                    else -> {
+                        Text(
+                            text = weatherError ?: "Não foi possível carregar o clima",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.padding(vertical = 10.dp))
                 Text(
                     text = stringResource(R.string.ltimo_c_lculo),
@@ -153,8 +213,12 @@ fun TelaPrincipal(navController: NavHostController, email: String?) {
         }
     }
 }
+
+
 @Composable
-fun CardApi() {
+fun CardApi(
+    weather: WeatherUiModel
+) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -179,15 +243,63 @@ fun CardApi() {
                         ),
                         shape = RoundedCornerShape(16.dp)
                     )
-                    .size(height = 438.dp, width = 324.dp),
-                verticalArrangement = Arrangement.SpaceEvenly,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {}
+                    .size(height = 438.dp, width = 324.dp)
+                    .padding(vertical = 20.dp, horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = weather.imageRes),
+                    contentDescription = weather.condition,
+                    modifier = Modifier.size(140.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = weather.cityName,
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = " ${weather.temperature}°",
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Máx: ${weather.maxTemperature}° Min: ${weather.minTemperature}°",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = weather.condition,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = weather.supportMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
         }
     }
 }
-
 @Composable
 fun UltimoCalculoCard(resultadoCO2: Double?) {
     Card(
@@ -745,6 +857,80 @@ fun MyBottomAppBar(navController: NavHostController, email: String?) {
                 )
             }
         }
+    }
+}
+
+private fun WeatherResponse.toWeatherUiModel(cityName: String): WeatherUiModel {
+    val climateInfo = mapWeatherCode(current.weatherCode)
+
+    return WeatherUiModel(
+        cityName = cityName,
+        temperature = current.temperature.toInt(),
+        maxTemperature = daily.temperatureMax.firstOrNull()?.toInt() ?: 0,
+        minTemperature = daily.temperatureMin.firstOrNull()?.toInt() ?: 0,
+        condition = climateInfo.condition,
+        supportMessage = climateInfo.message,
+        imageRes = climateInfo.imageRes
+    )
+}
+
+private data class ClimateInfo(
+    val condition: String,
+    val message: String,
+    val imageRes: Int
+)
+
+private fun mapWeatherCode(code: Int): ClimateInfo {
+    return when (code) {
+        0 -> ClimateInfo(
+            condition = "Ensolarado",
+            message = "Ótimo dia para sair. Use protetor solar e mantenha-se hidratado.",
+            imageRes = R.drawable.sun
+        )
+
+        1 -> ClimateInfo(
+            condition = "Sol entre nuvens",
+            message = "O dia está quente e com poucas nuvens.",
+            imageRes = R.drawable.sun
+        )
+
+        2 -> ClimateInfo(
+            condition = "Parcialmente nublado",
+            message = "Há nuvens no céu, mas o tempo continua firme.",
+            imageRes = R.drawable.cloud
+        )
+
+        3 -> ClimateInfo(
+            condition = "Nublado",
+            message = "O céu está mais fechado hoje.",
+            imageRes = R.drawable.cloud
+        )
+
+        45, 48 -> ClimateInfo(
+            condition = "Neblina",
+            message = "Se for sair, redobre a atenção no trânsito.",
+            imageRes = R.drawable.fog
+        )
+
+        51, 53, 55, 56, 57,
+        61, 63, 65, 66, 67,
+        80, 81, 82 -> ClimateInfo(
+            condition = "Chuvoso",
+            message = "Leve um guarda-chuva e redobre a atenção ao sair.",
+            imageRes = R.drawable.rain
+        )
+
+        95, 96, 99 -> ClimateInfo(
+            condition = "Tempestade",
+            message = "Evite sair se não for necessário e procure um local seguro.",
+            imageRes = R.drawable.storm
+        )
+
+        else -> ClimateInfo(
+            condition = "Clima indefinido",
+            message = "Confira as condições do tempo antes de sair.",
+            imageRes = R.drawable.stratus
+        )
     }
 }
 

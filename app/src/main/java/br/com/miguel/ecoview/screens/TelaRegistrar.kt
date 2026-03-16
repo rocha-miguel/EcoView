@@ -621,9 +621,14 @@ fun RegistrarFormulario(navController: NavController, imagemUsuario: Bitmap) {
             ) {
                 cidades.forEach { cidade ->
                     DropdownMenuItem(
-                        text = { Text(cidade, style = MaterialTheme.typography.bodySmall) },
+                        text = {
+                            Text(
+                                cidade.nome,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        },
                         onClick = {
-                            cidadeSelecionada = cidade
+                            cidadeSelecionada = cidade.nome
                             isCidadeError = false
                             expandedCidade = false
                         }

@@ -30,7 +30,7 @@ fun TopStartCard(modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun TopEndCardPreview() {
-    EcoViewTheme() {
+    EcoViewTheme {
         TopStartCard()
 
     }
@@ -54,7 +54,7 @@ fun BottomEndCard(modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun BottomStartCardPreview() {
-    EcoViewTheme() {
+    EcoViewTheme {
         BottomEndCard()
 
     }

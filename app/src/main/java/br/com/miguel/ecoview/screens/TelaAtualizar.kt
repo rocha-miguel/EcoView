@@ -244,9 +244,9 @@ fun AtualizarFormulario(
     usuarioEmail: String?
 ) {
 
-    var usuarioRepository = RoomUsuarioRepository(LocalContext.current)
+    val usuarioRepository = RoomUsuarioRepository(LocalContext.current)
 
-    var usuario = usuarioRepository.getUserByEmail(usuarioEmail!!)
+    val usuario = usuarioRepository.getUserByEmail(usuarioEmail!!)
 
     var nome by remember {
         mutableStateOf(usuario!!.nome)
@@ -633,9 +633,14 @@ fun AtualizarFormulario(
             ) {
                 cidades.forEach { cidade ->
                     DropdownMenuItem(
-                        text = { Text(cidade, style = MaterialTheme.typography.bodySmall) },
+                        text = {
+                            Text(
+                                cidade.nome,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        },
                         onClick = {
-                            cidadeSelecionada = cidade
+                            cidadeSelecionada = cidade.nome
                             isCidadeError = false
                             expandedCidade = false
                         }
